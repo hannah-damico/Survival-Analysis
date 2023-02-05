@@ -2,7 +2,7 @@
 # read in the data BE SURE TO CHANGE DIRECTORY BASED ON WHERE YOU PLACE THE FILE. 
 # NOTE THE DOUBLE SLASHES
 
-epese_data <-read.csv("P://Documents//Documents//BIOMETRY//longitudinal data analysis 2015//homeworks//homework 7//epese_bmi2.csv") 
+epese_data <-read.csv("./epese_bmi2-1.csv") 
 
 head (epese_data)
 summary(epese_data[,2:25])                  # summary statistics on age time homework 2 data set.
