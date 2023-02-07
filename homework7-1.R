@@ -59,7 +59,7 @@ plot(survfit(fit1.survival, fun = "cloglog"))
 # fit1 <- summary(survfit(Surv(age_at_death, dead) ~ smoke_at_baseline,
 #                       na.action=na.exclude,  data=smoke1))
 # fit2<- summary(survfit(Surv(age_at_death, dead) ~ smoke_at_baseline,
-na.action = na.exclude,  data = smoke2))
+# na.action = na.exclude,  data = smoke2))
 
 # check of log-log survival plot for smoking.
 
