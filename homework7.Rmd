@@ -1,0 +1,86 @@
+---
+title: "Homework 7"
+author: "Hannah Damico"
+date: "2023-02-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+```
+
+## Read in Data
+
+```{r}
+epese_data <- read.csv("./epese_bmi2-1.csv")
+```
+
+
+## Check out Data & Make some changes
+
+```{r}
+head (epese_data)
+summary(epese_data[, 2:25]) # summary statistics on age time homework 2 data set.
+
+
+# reverse code dead to deal with censor since death is the event, the censor would be alive
+# Now censor = 1 is alive, censor = 0 is dead
+epese_data$censor = -1 * (epese_data$dead - 1)
+```
+
+
+# Look at the  survival by  smoking group
+
+```{r}
+surv_probs <-
+  survfit(Surv(age_at_death, dead) ~ as.factor(smoke_at_baseline), data = epese_data)
+# summary(surv_probs)
+```
+
+
+# check the log rank statistic
+
+```{r}
+
+# Tests if there is a difference between two or more survival curves using the G^\rho
+# family of tests, or for a single curve against a known alternative
+
+survdiff(Surv(age_at_death, dead) ~ as.factor(smoke_at_baseline), data = epese_data)
+```
+
+
+# plot
+
+```{r}
+
+plot (
+  surv_probs,
+  main = "K-M estimates for smoking baseline, EPESE",
+  conf.int = FALSE,
+  xlab = "years",
+  ylab = "survival function"
+)
+summary(surv_probs)
+```
+
+
+# Question 1: Does smoking matter PHreg?
+
+According to the KM plot above, there are differences in survival across smoking groups.
+
+```{r}
+
+fit1.survival <-
+  coxph(
+    Surv(age_at_death, dead) ~ smoke_at_baseline,
+    method = "breslow",
+    na.action = na.exclude,
+    data = epese_data
+  )
+summary (fit1.survival)
+
+plot(survfit(fit1.survival, fun = "cloglog"))
+```
+
+

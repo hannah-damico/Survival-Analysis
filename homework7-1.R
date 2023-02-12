@@ -6,7 +6,7 @@
 epese_data <- read.csv("./epese_bmi2-1.csv")
 
 head (epese_data)
-summary(epese_data[, 2:25])                  # summary statistics on age time homework 2 data set.
+summary(epese_data[, 2:25]) # summary statistics on age time homework 2 data set.
 
 
 # reverse code dead to deal with censor
