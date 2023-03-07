@@ -67,7 +67,7 @@ summary(surv_probs)
 
 # Question 1: Does smoking matter PHreg?
 
-According to the KM plot above, there are differences in survival across smoking groups.
+According to the KM plot above, there are differences in survival across smoking groups. We make this conclusion since the KM curves for smokers & non-smokers do not cross, indicating a difference in survival across groups.
 
 ```{r}
 
@@ -82,5 +82,155 @@ summary (fit1.survival)
 
 plot(survfit(fit1.survival, fun = "cloglog"))
 ```
+
+
+
+```{r}
+library(survival)
+data(lung)
+fit <- coxph(Surv(time, status) ~ sex, data = lung)
+plot(survfit(fit, fun = "cloglog"), mark.time = FALSE)
+
+```
+
+
+
+# Question 3: race effect
+
+
+```{r}
+fit3.survival <- coxph(
+  Surv(age_at_death, dead) ~ white,
+  method = "breslow",
+  na.action = na.exclude,
+  data = epese_data
+)
+summary (fit3.survival)
+```
+
+# plot survival curves
+
+We see an intersection of HR curves across groups, indicating that at some point in time (t = 15?), the HR are equivalent. 
+
+```{r}
+surv_probs <-
+  survfit(Surv(age_at_death, dead) ~ as.factor(white), data = epese_data)
+surv_probs2 <-
+  (surv_probs)    #Can also use summary(surv_probs). Removes censored values but also removes final values
+prob <- as.data.frame(cbind(surv_probs2$surv, surv_probs2$time))
+names(prob) <- c('surv', 'time')
+prob$white = NA
+prob
+
+prob$white[1:36] = 0
+prob$white[37:70] = 1
+
+plot (
+  prob$time[prob$white == 1],
+  prob$surv[prob$white == 1],
+  type = 'p',
+  col = c(4),
+  xlim = c(0, 38),
+  ylim = c(0, 1),
+  main = " survival func: race",
+  xlab = "age at death -70",
+  ylab = "survival probability"
+)
+par(new = T)
+plot (
+  prob$time[prob$white == 0],
+  prob$surv[prob$white == 0],
+  type = 'p',
+  col = c(2),
+  xlim = c(0, 38),
+  ylim = c(0, 1),
+  ylab = '',
+  xlab = ''
+)
+lines(
+  prob$time[prob$white == 1],
+  prob$surv[prob$white == 1],
+  type = 'l',
+  col = c(4),
+  xlim = c(0, 38),
+  ylim = c(0, 1),
+  ylab = '',
+  xlab = ''
+)
+lines(
+  prob$time[prob$white == 0],
+  prob$surv[prob$white == 0],
+  type = 'l',
+  col = c(2),
+  xlim = c(0, 38),
+  ylim = c(0, 1),
+  ylab = '',
+  xlab = ''
+)
+
+```
+
+
+
+```{r}
+surv_probs <-
+  survfit(Surv(age_at_death, dead) ~ as.factor(white), data = epese_data)
+surv_probs2 <-
+  (surv_probs)    #Can also use summary(surv_probs). Removes censored values but also removes final values
+surv_probs2$lls_surv <- log(-log(surv_probs2$surv))
+surv_probs2$time <- log(surv_probs2$time)
+log_prob <-
+  as.data.frame(cbind(surv_probs2$lls_surv, surv_probs2$time))
+names(log_prob) <- c('surv', 'time')
+log_prob$white = NA
+x <- max(as.numeric(rownames(log_prob[log_prob$time == 0, ])))
+log_prob$white[1:x - 1] = 1
+log_prob$white[x:nrow(log_prob)] = 0
+
+plot (
+  log_prob$time[log_prob$white == 1],
+  log_prob$surv[log_prob$white == 1],
+  type = 'p',
+  col = c(4),
+  xlim = c(0, 4),
+  ylim = c(-6.5, 1),
+  main = "Log of -log of estimated surv func: race",
+  xlab = "log(age at death) -70",
+  ylab = "log(-log(survival function))"
+)
+par(new = T)
+plot (
+  log_prob$time[log_prob$white == 0],
+  log_prob$surv[log_prob$white == 0],
+  type = 'p',
+  col = c(2),
+  xlim = c(0, 4),
+  ylim = c(-6.5, 1),
+  ylab = '',
+  xlab = ''
+)
+lines(
+  log_prob$time[log_prob$white == 1],
+  log_prob$surv[log_prob$white == 1],
+  type = 'l',
+  col = c(4),
+  xlim = c(0, 4),
+  ylim = c(-6.5, 1),
+  ylab = '',
+  xlab = ''
+)
+lines(
+  log_prob$time[log_prob$white == 0],
+  log_prob$surv[log_prob$white == 0],
+  type = 'l',
+  col = c(2),
+  xlim = c(0, 4),
+  ylim = c(-6.5, 1),
+  ylab = '',
+  xlab = ''
+)
+```
+
+
 
 
