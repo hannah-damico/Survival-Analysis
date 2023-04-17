@@ -3,7 +3,7 @@
 # building in the EPESE.
 
 library (survival)
-epese <-read.csv("P:/cfp/Documents/Documents/BIOMETRY/longitudinal data analysis 2022/data/epese_bmi2.csv")
+epese <- read.csv("./epese_bmi2-1.csv")
 
 attach(epese)
 
@@ -60,6 +60,7 @@ summary(diff)
 Cox_left_censor1 <- coxph (Surv(age_at_death_70, dead==1)~as.factor(smoke_at_baseline)*age_at_death_70  , 
                            method="breslow", na.action=na.exclude, data=epese)
 summary (Cox_left_censor1)
+# concordance 0.99 > other concordance of 0.546 so proportionality assumption is now met
 
 
 
@@ -83,6 +84,8 @@ print(zph.fit1)
 plot(zph.fit1[1])
 abline(h=0, lty=3)
 
+
+# ANSWER: Risk for mortality for baseline smoking increases over time
 
 # question 2 - incorporating left censoring.
 
