@@ -1,0 +1,152 @@
+---
+title: "Cox Proportional Demo"
+author: "Hannah Damico"
+date: "2023-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(survminer)
+```
+
+## Resource
+Data obtained from:
+http://www.sthda.com/english/wiki/cox-proportional-hazards-model
+
+## Load Data
+
+
+```{r}
+data(cancer, package="survival")
+```
+
+
+## Univariate Cox Regression 
+
+
+```{r}
+res.cox <- coxph(Surv(time, status) ~ sex, data = lung)
+res.cox
+```
+
+```{r}
+summary(res.cox)
+```
+
+Interpretation:
+
+The Cox regression results can be interpreted as follow:  
+
+1. Statistical significance. The column marked “z” gives the Wald statistic value. It corresponds to the ratio of each regression coefficient to its standard error (z = coef/se(coef)). The wald statistic evaluates, whether the beta ($\beta$) coefficient of a given variable is statistically significantly different from 0. From the output above, we can conclude that the variable sex have highly statistically significant coefficients.  
+
+2. The regression coefficients. The second feature to note in the Cox model results is the the sign of the regression coefficients (coef). A positive sign means that the hazard (risk of death) is higher, and thus the prognosis worse, for subjects with higher values of that variable. The variable sex is encoded as a numeric vector. 1: male, 2: female. The R summary for the Cox model gives the hazard ratio (HR) for the second group relative to the first group, that is, female versus male. The beta coefficient for sex = -0.53 indicates that females have lower risk of death (lower survival rates) than males, in these data.  
+
+3. Hazard ratios. The exponentiated coefficients (exp(coef) = exp(-0.53) = 0.59), also known as hazard ratios, give the effect size of covariates. For example, being female (sex=2) reduces the hazard by a factor of 0.59, or 41%. Being female is associated with good prognostic.  
+
+4. Confidence intervals of the hazard ratios. The summary output also gives upper and lower 95% confidence intervals for the hazard ratio (exp(coef)), lower 95% bound = 0.4237, upper 95% bound = 0.816.  
+
+5. Global statistical significance of the model. Finally, the output gives p-values for three alternative tests for overall significance of the model: The likelihood-ratio test, Wald test, and score logrank statistics. These three methods are asymptotically equivalent. For large enough N, they will give similar results. For small N, they may differ somewhat. The Likelihood ratio test has better behavior for small sample sizes, so it is generally preferred.  
+
+
+```{r}
+covariates <- c("age", "sex",  "ph.karno", "ph.ecog", "wt.loss")
+univ_formulas <- sapply(covariates,
+                        function(x) as.formula(paste('Surv(time, status)~', x)))
+                        
+univ_models <- lapply( univ_formulas, function(x){coxph(x, data = lung)})
+# Extract data 
+univ_results <- lapply(univ_models,
+                       function(x){ 
+                          x <- summary(x)
+                          p.value<-signif(x$wald["pvalue"], digits=2)
+                          wald.test<-signif(x$wald["test"], digits=2)
+                          beta<-signif(x$coef[1], digits=2);#coeficient beta
+                          HR <-signif(x$coef[2], digits=2);#exp(beta)
+                          HR.confint.lower <- signif(x$conf.int[,"lower .95"], 2)
+                          HR.confint.upper <- signif(x$conf.int[,"upper .95"],2)
+                          HR <- paste0(HR, " (", 
+                                       HR.confint.lower, "-", HR.confint.upper, ")")
+                          res<-c(beta, HR, wald.test, p.value)
+                          names(res)<-c("beta", "HR (95% CI for HR)", "wald.test", 
+                                        "p.value")
+                          return(res)
+                          #return(exp(cbind(coef(x),confint(x))))
+                         })
+res <- t(as.data.frame(univ_results, check.names = FALSE))
+as.data.frame(res)
+
+```
+
+### Results
+
+The output above shows the regression beta coefficients, the effect sizes (given as hazard ratios) and statistical significance for each of the variables in relation to overall survival. Each factor is assessed through separate univariate Cox regressions.
+
+
+From the output above,
+
+The variables sex, age and ph.ecog have highly statistically significant coefficients, while the coefficient for ph.karno is not significant.
+
+age and ph.ecog have positive beta coefficients, while sex has a negative coefficient. Thus, older age and higher ph.ecog are associated with poorer survival, whereas being female (sex=2) is associated with better survival.
+
+
+## Multivariate Cox Regression
+
+```{r}
+res.cox <- coxph(Surv(time, status) ~ age + sex + ph.ecog, data =  lung)
+summary(res.cox)
+```
+
+
+The p-value for all three overall tests (likelihood, Wald, and score) are significant, indicating that the model is significant. These tests evaluate the omnibus null hypothesis that all of the betas ($\beta$) are 0. In the above example, the test statistics are in close agreement, and the omnibus null hypothesis is soundly rejected.
+
+In the multivariate Cox analysis, the covariates sex and ph.ecog remain significant (p < 0.05). However, the covariate age fails to be significant (p = 0.23, which is grater than 0.05).
+
+The p-value for sex is 0.000986, with a hazard ratio HR = exp(coef) = 0.58, indicating a strong relationship between the patients’ sex and decreased risk of death. The hazard ratios of covariates are interpretable as multiplicative effects on the hazard. For example, holding the other covariates constant, being female (sex=2) reduces the hazard by a factor of 0.58, or 42%. We conclude that, being female is associated with good prognostic.
+
+Similarly, the p-value for ph.ecog is 4.45e-05, with a hazard ratio HR = 1.59, indicating a strong relationship between the ph.ecog value and increased risk of death. Holding the other covariates constant, a higher value of ph.ecog is associated with a poor survival.
+
+By contrast, the p-value for age is now p=0.23. The hazard ratio HR = exp(coef) = 1.01, with a 95% confidence interval of 0.99 to 1.03. Because the confidence interval for HR includes 1, these results indicate that age makes a smaller contribution to the difference in the HR after adjusting for the ph.ecog values and patient’s sex, and only trend toward significance. For example, holding the other covariates constant, an additional year of age induce daily hazard of death by a factor of exp(beta) = 1.01, or 1%, which is not a significant contribution.
+
+
+```{r}
+# Plot the baseline survival function
+ggsurvplot(data = lung, survfit(res.cox), palette = "#2E9FDF",
+           ggtheme = theme_minimal())
+```
+
+
+
+Consider that, we want to assess the impact of the sex on the estimated survival probability. In this case, we construct a new data frame with two rows, one for each value of sex; the other covariates are fixed to their average values (if they are continuous variables) or to their lowest level (if they are discrete variables). For a dummy covariate, the average value is the proportion coded 1 in the data set. This data frame is passed to survfit() via the newdata argument:
+
+```{r}
+# Create the new data  
+sex_df <- with(lung,
+               data.frame(sex = c(1, 2), 
+                          age = rep(mean(age, na.rm = TRUE), 2),
+                          ph.ecog = c(1, 1)
+                          )
+               )
+sex_df
+```
+
+
+```{r}
+# Survival curves
+fit <- survfit(res.cox, newdata = sex_df)
+ggsurvplot(data =lung, fit, conf.int = TRUE, legend.labs=c("Sex=1", "Sex=2"),
+           ggtheme = theme_minimal())
+```
+
+
+## Summary
+
+In this article, we described the Cox regression model for assessing simultaneously the relationship between multiple risk factors and patient’s survival time. We demonstrated how to compute the Cox model using the survival package. Additionally, we described how to visualize the results of the analysis using the survminer package.
+
+
+### References  
+
+- Cox DR (1972). Regression models and life tables (with discussion). J R Statist Soc B 34: 187–220. 
+
+- MJ Bradburn, TG Clark, SB Love and DG Altman. Survival Analysis Part II: Multivariate data analysis – an introduction to concepts and methods. British Journal of Cancer (2003) 89, 431 – 436
